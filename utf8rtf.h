@@ -217,16 +217,12 @@ int _utf8rtf_parse_rtf(FILE *fp)
 		if (ch == 0x5c){ // dash '\'
 			buf[l++] = ch; 
 			/* look next */
-			c=fgetc(fp);
-			if (c==EOF)
-				break;
+			c=fgetc(fp); if (c==EOF) break;
 			ch=(char)c;
 			buf[l++] = ch; 
 			if (ch == 'u'){
 				/* this may be unicode, look next */	
-				c=fgetc(fp);
-				if (c==EOF)
-					break;
+				c=fgetc(fp); if (c==EOF) break;
 				ch=(char)c;
 				if (ch >= '0' && ch <= '9'){
 					/* this is UNICODE! */
@@ -247,13 +243,10 @@ int _utf8rtf_parse_rtf(FILE *fp)
 					l = 0;					
 
 					/* remove space after unicode */ 
-					c=fgetc(fp);
-					if (c==EOF)
-						break;
+					c=fgetc(fp); if (c==EOF) break;
 					ch=(char)c;
 					if (ch != ' ')
 						goto parse;
-
 				}
 				else {
 					buf[l++] = ch; 
@@ -296,6 +289,7 @@ int utf8rtf_decode(){
 
 void 
 _utf8rtf_parse_utf8_cb(void * user_data, uint32_t utf32_char){
+	/* print \uXXXX code with space */
 	fprintf(stdout, "\\u%d ", utf32_char);
 }
 
@@ -325,9 +319,7 @@ int _utf8rtf_parse_utf8(FILE *fp)
 			if ((u & 0b11110000) == 240){ //4
 				count = 4; 
 				for (i = 0; i < 3; ++i) {
-					c=fgetc(fp);
-					if (c==EOF)
-						break;
+					c=fgetc(fp); if (c==EOF) break;
 					ch=(char)c;
 					buf[l++] = ch; 
 				}
@@ -335,21 +327,16 @@ int _utf8rtf_parse_utf8(FILE *fp)
 			else if ((u & 0b11100000) == 224){ //3
 				count = 3; 
 				for (i = 0; i < 2; ++i) {
-					c=fgetc(fp);
-					if (c==EOF)
-						break;
+					c=fgetc(fp); if (c==EOF) break;
 					ch=(char)c;
 					buf[l++] = ch; 
 				}
 			}
 			else if ((u & 0b11000000) == 192){ //2
 				count = 2; 
-				c=fgetc(fp);
-				if (c==EOF)
-					break;
+				c=fgetc(fp); if (c==EOF) break;
 				ch=(char)c;
 				buf[l++] = ch;
-
 			}			
 			else { //1
 				/* just print char to stdout */	
