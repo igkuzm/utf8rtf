@@ -9,7 +9,7 @@ instead of
 \u1055 \u1088 \u1080 \u1074 \u1077 \u1090  \u1052 \u1048 \u1056
 ```
 
-### example in .vimrc:
+### example to use in .vimrc:
 
 ```
 autocmd BufReadPre *.rtf set filetype=rtf
