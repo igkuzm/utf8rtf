@@ -6,9 +6,9 @@
  * Last Modified By  : Igor V. Sementsov <ig.kuzm@gmail.com>
  */
 
-#include "utf8rtf.h"
 #include <stdio.h>
 #include <string.h>
+#include "utf8rtf.h"
 
 void print_usage(int argc, char *argv[]){
 	fprintf(stderr, 
@@ -29,7 +29,8 @@ int main(int argc, char *argv[])
 		else if (strncmp(argv[1], "--encode", 9) == 0 )
 			return utf8rtf_encode();
 	}
-	else print_usage(argc, argv);
+	
+	print_usage(argc, argv);
 	
 	return 0;
 }

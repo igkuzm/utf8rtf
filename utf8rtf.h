@@ -16,8 +16,6 @@ extern "C"{
 #include <stdio.h>
 #include <stdint.h>
 
-#include "utf.h"
-
 /*
  * convert rtf unicode to utf8 from stdin to stdout
  */
@@ -28,10 +26,173 @@ static int utf8rtf_decode();
  */
 static int utf8rtf_encode();
 
+
+
 /*
  * IMP
  */
-int _utf8rtf_uncode(void *user_data, uint8_t utf8_char){
+
+void 
+_utf8_to_utf32(
+		int count, 
+		uint8_t *utf8_char, 
+		void * user_data, 
+		void (*callback)(void * user_data, uint32_t utf32_char))
+{
+	uint8_t *ptr = utf8_char; //pointer (do not change value)
+	uint32_t utf32_char = 0;
+
+	switch (count) {
+		case 4: {
+			//take last 3 bit from first char
+			uint32_t byte0 = (*ptr++ & 0x7) << 18;   //0b00000111	
+			
+			//take last 6 bit from second char
+			uint32_t byte1 = (*ptr++ & 0x3f) << 12;  //0b00111111	
+			
+			//take last 6 bit from third char
+			uint32_t byte2 = (*ptr++ & 0x3f) << 6;   //0b00111111	
+			
+			//take last 6 bit from forth char
+			uint32_t byte3 = *ptr++ & 0x3f;          //0b00111111	
+			
+			utf32_char = (byte0 | byte1 | byte2 | byte3);					
+
+			break;
+		} 
+
+		case 3: {
+			//take last 4 bit from first char
+			uint32_t byte0 = (*ptr++ & 0xf) << 12;  //0b00001111	
+			
+			//take last 6 bit from second char
+			uint32_t byte1 = (*ptr++ & 0x3f) << 6;  //0b00111111	
+			
+			//take last 6 bit from third char
+			uint32_t byte2 = *ptr++ & 0x3f;         //0b00111111
+
+			utf32_char = (byte0 | byte1 | byte2);
+
+			break;
+		} 
+
+		case 2: {
+			//take last 5 bit from first char
+			uint32_t byte0 = (*ptr++ & 0x1f) << 6;  //0b00011111
+			
+			//take last 6 bit from second char
+			uint32_t byte1 = *ptr++ & 0x3f;	        //0b00111111
+
+			utf32_char = (byte0 | byte1);
+
+			break;
+		} 
+
+		case 1: {
+			utf32_char = *ptr++;
+
+			break;
+		} 				
+
+		default:
+			break;
+				
+	}
+	if (callback)
+		if(utf32_char)
+			callback(user_data, utf32_char);
+}
+
+void
+_utf32_to_utf8(
+		uint32_t utf32_char,
+		void * user_data,
+		int (*callback)(void * user_data, uint8_t utf8_char)		
+		)
+{
+	//more than 00000000 00000100 00000000 00000000
+	if (utf32_char > 0x040000){ //4-byte
+		uint8_t utf8_char;
+
+		//get first byte - first 3 bit 00000000 00011100 00000000 00000000
+		//and mask with 11110000 
+		utf8_char = ((utf32_char & 0x1C0000) >> 18) | 0xF0;
+		if (callback)
+			if(callback(user_data, utf8_char))
+				return;
+
+		//get second - 00000000 00000011 11110000 00000000
+		//and mask with 10000000 
+		utf8_char = ((utf32_char & 0x03F000) >> 12) | 0x80;
+		if (callback)
+			if(callback(user_data, utf8_char))
+				return;
+		
+		//get third - 00000000 00000000 00001111 11000000
+		//and mask with 10000000 
+		utf8_char = ((utf32_char & 0x0FC0) >> 6 )   | 0x80;
+		if (callback)
+			if(callback(user_data, utf8_char))
+				return;
+
+		//get last - 00000000 00000000 00000000 00111111
+		//and mask with 10000000 
+		utf8_char = ( utf32_char & 0x3F)            | 0x80;
+		if (callback)
+			if(callback(user_data, utf8_char))
+				return;
+	}
+	//more than 00000000 00000000 00010000 00000000
+	else if (utf32_char > 0x1000){ //3-byte
+		uint8_t utf8_char;
+		
+		//get first byte - first 4 bit 00000000 00000000 11110000 00000000
+		//and mask with 11100000 
+		utf8_char = ((utf32_char & 0xF000) >> 12) | 0xE0;
+		if (callback)
+			if(callback(user_data, utf8_char))
+				return;
+
+		//get second - 00000000 00000000 00001111 11000000
+		//and mask with 10000000 
+		utf8_char = ((utf32_char & 0x0FC0) >> 6 ) | 0x80;
+		if (callback)
+			if(callback(user_data, utf8_char))
+				return;
+		
+		//get last - 00000000 00000000 00000000 00111111
+		//and mask with 10000000 
+		utf8_char = ( utf32_char & 0x3F)          | 0x80;
+		if (callback)
+			if(callback(user_data, utf8_char))
+				return;
+	}
+	//more than 000000000 00000000 00000000 1000000
+	else if (utf32_char > 0x80){ //2-byte
+		uint8_t utf8_char;
+		//get first byte - first 5 bit 00000000 00000000 00000111 11000000
+		//and mask with 11000000 
+		utf8_char = ((utf32_char & 0x7C0)>> 6) | 0xC0;
+		if (callback)
+			if(callback(user_data, utf8_char))
+				return;
+
+		//get last - 00000000 00000000 00000000 00111111 
+		//and mask with 10000000 
+		utf8_char = ( utf32_char & 0x3F)       | 0x80;
+		if (callback)
+			if(callback(user_data, utf8_char))
+				return;
+	}
+	else { //ANSY
+		uint8_t utf8_char = utf32_char;
+		if (callback)
+			if(callback(user_data, utf8_char))
+				return;
+	}
+}
+
+int _utf8rtf_parse_rtf_cb(void *user_data, uint8_t utf8_char){
 	fprintf(stdout, "%c", utf8_char);
 	return 0;
 }
@@ -78,7 +239,7 @@ int _utf8rtf_parse_rtf(FILE *fp)
 
 					uint32_t u;
 					sscanf(unicode, "%u", &u);			
-					utf32_to_utf8(u, NULL, _utf8rtf_uncode);					
+					_utf32_to_utf8(u, NULL, _utf8rtf_parse_rtf_cb);					
 
 					/* free buffer */
 					for (i = 0; i < l; ++i)
@@ -198,7 +359,7 @@ int _utf8rtf_parse_utf8(FILE *fp)
 			}
 
 			/* parse buffer */
-			utf8_to_utf32(count, (uint8_t *)buf, NULL, _utf8rtf_parse_utf8_cb);
+			_utf8_to_utf32(count, (uint8_t *)buf, NULL, _utf8rtf_parse_utf8_cb);
 			
 			/* free buffer */
 			for (i = 0; i < l; ++i)
