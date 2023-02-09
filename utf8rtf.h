@@ -2,7 +2,7 @@
  * File              : utf8rtf.h
  * Author            : Igor V. Sementsov <ig.kuzm@gmail.com>
  * Date              : 06.09.2021
- * Last Modified Date: 08.02.2023
+ * Last Modified Date: 09.02.2023
  * Last Modified By  : Igor V. Sementsov <ig.kuzm@gmail.com>
  */
 
@@ -308,34 +308,37 @@ int _utf8rtf_parse_utf8(FILE *fp)
 			break;
 		}
 
-		ch = (char)c;
+		ch = c;
 
-		if (ch < 0){ 
+		if (ch > 128 || ch < 0){ 
 			/* this is utf8 */
 			buf[l++] = ch; 
 			/* get number of bytes in utf8 char */
 			int count = 1;
 			uint8_t u = ch;
-			if ((u & 0b11110000) == 240){ //4
+			// 0b11110000
+			if ((u & 0xf0) == 0xf0){ //4
 				count = 4; 
 				for (i = 0; i < 3; ++i) {
 					c=fgetc(fp); if (c==EOF) break;
-					ch=(char)c;
+					ch=c;
 					buf[l++] = ch; 
 				}
 			}
-			else if ((u & 0b11100000) == 224){ //3
+			// 0b11100000
+			else if ((u & 0xe0) == 0xe0){ //3
 				count = 3; 
 				for (i = 0; i < 2; ++i) {
 					c=fgetc(fp); if (c==EOF) break;
-					ch=(char)c;
+					ch=c;
 					buf[l++] = ch; 
 				}
 			}
-			else if ((u & 0b11000000) == 192){ //2
+			// 0b11000000
+			else if ((u & 0xc0) == 0xc0){ //2
 				count = 2; 
 				c=fgetc(fp); if (c==EOF) break;
-				ch=(char)c;
+				ch=c;
 				buf[l++] = ch;
 			}			
 			else { //1
