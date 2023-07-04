@@ -2,7 +2,7 @@
  * File              : utf8rtf.h
  * Author            : Igor V. Sementsov <ig.kuzm@gmail.com>
  * Date              : 06.09.2021
- * Last Modified Date: 09.02.2023
+ * Last Modified Date: 04.07.2023
  * Last Modified By  : Igor V. Sementsov <ig.kuzm@gmail.com>
  */
 
@@ -220,7 +220,19 @@ int _utf8rtf_parse_rtf(FILE *fp)
 			c=fgetc(fp); if (c==EOF) break;
 			ch=(char)c;
 			buf[l++] = ch; 
-			if (ch == 'u'){
+			if (c== '\''){
+				// this may by 8-bit code
+				c=fgetc(fp); if (c==EOF) break;
+				ch=(char)c;
+				if (ch >= '0' && ch <= '9'){
+					/* this is 8-bit! */
+					char bit8[5];
+					bit8[0] = ch;
+					bit8[1] = fgetc(fp);
+					// todo - handle 8-bit code
+				}
+			}
+			else if (ch == 'u'){
 				/* this may be unicode, look next */	
 				c=fgetc(fp); if (c==EOF) break;
 				ch=(char)c;
