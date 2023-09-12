@@ -2,7 +2,7 @@
  * File              : utf8rtf.h
  * Author            : Igor V. Sementsov <ig.kuzm@gmail.com>
  * Date              : 06.09.2021
- * Last Modified Date: 04.07.2023
+ * Last Modified Date: 12.09.2023
  * Last Modified By  : Igor V. Sementsov <ig.kuzm@gmail.com>
  */
 
@@ -369,6 +369,9 @@ int _utf8rtf_parse_utf8(FILE *fp)
 			l = 0;
 		}
 		else {
+			/* print double space */
+			if (ch == ' ')
+				fprintf(stdout, "%c", ch);
 			/* print char */
 			fprintf(stdout, "%c", ch);
 		}
