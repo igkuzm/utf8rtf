@@ -237,7 +237,7 @@ static int _utf8rtf_parse_rtf(FILE *fp)
 				fprintf(stdout, "%s", s);
 				
 				// if next char is space or ? - drop it
-				if (ch == ' ' || ch == '?')
+				if (ch == ' ')
 					continue;
 			
 				goto parse;
